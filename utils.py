@@ -106,3 +106,55 @@ def update_redshift_table(engine, df):
         """)
         connection.execute(merge_query)
         print(f"Datos actualizados en la tabla {table_name} en el esquema {schema}.")
+
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def enviar(email_user, email_password, subject, body_text, to_email):
+    try:
+        # Configurar el servidor SMTP
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(email_user, email_password)
+
+        # Crear el mensaje
+        message = MIMEMultipart()
+        message['From'] = email_user
+        message['To'] = to_email
+        message['Subject'] = subject
+
+        message.attach(MIMEText(body_text, 'plain'))
+
+        # Enviar el correo
+        server.send_message(message)
+        server.quit()
+
+        print('Correo enviado exitosamente.')
+    except Exception as e:
+        print(f'Error al enviar el correo: {e}')
+
+def detect_hazardous_asteroids_and_notify(email_user, email_password, df, start_date, end_date):
+    """
+    Detecta si hay asteroides potencialmente peligrosos en el DataFrame,
+    imprime cuántos hay y sus nombres, y envía un correo si se detectan.
+    """
+    hazardous_asteroids = df[df['is_potentially_hazardous_asteroid'] == True]
+    
+    if not hazardous_asteroids.empty:
+        count = hazardous_asteroids.shape[0]  # Número de asteroides peligrosos
+        names = hazardous_asteroids['name'].tolist()  # Lista de nombres de los asteroides peligrosos
+        
+        print(f"Se han detectado {count} asteroides potencialmente peligrosos.")
+        print("Nombres de los asteroides peligrosos:")
+        for name in names:
+            print(f"- {name}")
+
+        # Preparar y enviar el correo
+        subject = "Alerta: Asteroides potencialmente peligrosos detectados"
+        body_text = f"Se han detectado {count} asteroides potencialmente peligrosos entre las fechas {start_date} y {end_date}.\n\nDetalles:\n{hazardous_asteroids.to_string(index=False)}"
+        to_email = 'etllucas04@gmail.com'
+        enviar(email_user, email_password, subject, body_text, to_email)
+    else:
+        print("No se detectaron asteroides potencialmente peligrosos.")
